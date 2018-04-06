@@ -97,3 +97,16 @@ void lpl_header_append(header_t *h, const char *name, const lpl_type_t type)
 void lpl_header_remove(header_t *h, const char *name)
 {
 }
+
+header_t *lpl_header_search(header_t *h, const char *name)
+{
+    if (strcmp(h->name, name) == 0)
+        return h;
+
+    header_t *ptr = h->next;
+
+    while (ptr && (strcmp(ptr->name, name) != 0))
+        ptr = ptr->next;
+
+    return ptr;
+}
