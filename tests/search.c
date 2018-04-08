@@ -53,5 +53,7 @@ int main()
     header_t *null = lpl_header_search(h, "not found");
     assert(null == NULL);
 
+    lpl_header_destroy(h);
+
     return 0;
 }

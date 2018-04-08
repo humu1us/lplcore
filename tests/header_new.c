@@ -16,22 +16,28 @@ int main()
 
     assert(h);
 
-    int i = 0;
-
-    while (h)
+    int index = 0;
+    int count = 0;
+    for (; count < 6; ++count)
     {
-        assert(strcmp(names[i], lpl_header_name(h)) == 0);
-        assert(types[i] == lpl_header_type(h));
-
-        printf("* Node: %d\n", i);
+        printf("* Node: %d\n", count);
         printf("* Name: %s\n", lpl_header_name(h));
-        printf("* Type: %d\n\n", lpl_header_type(h));
+        printf("* Type: %d\n", lpl_header_type(h));
+        printf("* indx: %d\n\n", index);
+        assert(strcmp(names[index], lpl_header_name(h)) == 0);
+        assert(types[index] == lpl_header_type(h));
 
         h = lpl_header_next(h);
-        ++i;
+
+        if (count > 0 && ((count + 1) % 3) == 0)
+            index = 0;
+        else
+            ++index;
     }
 
-    assert(i == size);
+    assert(count / 2 == size);
+
+    lpl_header_destroy(h);
 
     return 0;
 }
