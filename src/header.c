@@ -122,7 +122,7 @@ void lpl_header_append(header_t *h, const char *name, const lpl_type_t type)
     if (!new)
         return;
 
-    new->next = move_to_init(h);
+    new->next = last->next;
     last->next = new;
 }
 
