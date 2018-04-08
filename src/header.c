@@ -5,30 +5,29 @@
 struct _header
 {
     char *name;
+    size_t index;
     lpl_type_t type;
 
     header_t *next;
 };
 
 
-header_t *node_new(const char *name, const lpl_type_t type)
+// Private functions
+
+header_t *node_new(const char *name, const lpl_type_t type, int index)
 {
     header_t *h = (header_t *) malloc(sizeof(header_t));
 
     if (!h)
         return NULL;
 
-    size_t name_size = strlen(name);
-    h->name = (char *) malloc(name_size + 1);
+    if (name)
+        h->name = strdup(name);
+    else
+        h->name = NULL;
 
-    if (!h->name)
-    {
-        free(h);
-        return NULL;
-    }
-
-    strncpy(h->name, name, name_size);
     h->type = type;
+    h->index = index;
     h->next = NULL;
 
     return h;
@@ -38,36 +37,60 @@ header_t *node_new(const char *name, const lpl_type_t type)
 void node_destroy(header_t *h)
 {
     free(h->name);
+    h->name = NULL;
+    h->next = NULL;
+    h->type = 0;
     free(h);
 }
 
+
+header_t *move_to_init(header_t *h)
+{
+    header_t *ptr = h;
+
+    while (ptr->index != 0)
+        ptr = ptr->next;
+    return ptr;
+}
+
+
+// Public API
 
 header_t *lpl_header_new(size_t size,
                          const char **names,
                          const lpl_type_t *types)
 {
-    header_t *h = node_new(names[0], types[0]);
-    header_t *ptr = h;
+    header_t *init = node_new(NULL, lpl_no_type, 0);
+    if (!init)
+        return NULL;
 
-    for (size_t i = 1; i < size; ++i)
+    header_t *ptr = init;
+
+    for (size_t i = 0; i < size; ++i)
     {
-        ptr->next = node_new(names[i], types[i]);
+        ptr->next = node_new(names[i], types[i], i + 1);
         ptr = ptr->next;
     }
 
-    return h;
+    ptr->next = init;
+
+    return init->next;
 }
 
 
 void lpl_header_destroy(header_t *h)
 {
+    h = lpl_header_first(h);
     header_t *ptr = NULL;
-    while (h)
+
+    do
     {
         ptr = h->next;
         node_destroy(h);
         h = ptr;
     }
+    while (h->index != 0);
+    node_destroy(h);
 }
 
 
@@ -85,6 +108,8 @@ lpl_type_t lpl_header_type(header_t *h)
 
 header_t *lpl_header_next(header_t *h)
 {
+    if (h->next->index == 0)
+        return h->next->next;
     return h->next;
 }
 
@@ -98,15 +123,22 @@ void lpl_header_remove(header_t *h, const char *name)
 {
 }
 
+
 header_t *lpl_header_search(header_t *h, const char *name)
 {
-    if (strcmp(h->name, name) == 0)
-        return h;
+    if (!h)
+        return NULL;
 
-    header_t *ptr = h->next;
+    header_t *ptr = h;
 
-    while (ptr && (strcmp(ptr->name, name) != 0))
+    while (ptr->index != 0)
+    {
+        if (strcmp(ptr->name, name) == 0)
+            return ptr;
         ptr = ptr->next;
+    }
+    return NULL;
+}
 
     return ptr;
 }
