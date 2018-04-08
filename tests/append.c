@@ -7,22 +7,21 @@
 
 void show_header(header_t *h)
 {
-    printf("\t* Name: %s\n", lpl_header_name(h));
-    printf("\t* Type: %d\n\n", lpl_header_type(h));
+    printf("* Name: %s\n", lpl_header_name(h));
+    printf("* Type: %d\n\n", lpl_header_type(h));
 }
 
 
 int main()
 {
-    const char *names[] = {"First"};
-    const lpl_type_t types[] = {lpl_int8};
-
-    header_t *h = lpl_header_new(1, names, types);
-    assert(h);
-
+    header_t *h = lpl_header_new_empty();
+    lpl_header_append(h, "First", lpl_int8);
     lpl_header_append(h, "Second", lpl_int16);
+    lpl_header_append(h, "Third", lpl_float32);
 
-    for (int i = 0; i < 2; ++i)
+    size_t size = lpl_header_size(h);
+
+    for (size_t i = 0; i < size; ++i)
     {
         show_header(h);
         h = lpl_header_next(h);

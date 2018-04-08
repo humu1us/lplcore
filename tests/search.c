@@ -27,6 +27,8 @@ void compare_list(header_t *h, const char *name, lpl_type_t type)
 
 void show_header(header_t *h, char *where)
 {
+    if (!h)
+        printf("NULO ctm!\n");
     printf("* Moving to %s:\n", where);
     printf("\t- Name: %s\n", lpl_header_name(h));
     printf("\t- Type: %d\n", lpl_header_type(h));
