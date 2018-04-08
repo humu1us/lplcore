@@ -116,6 +116,14 @@ header_t *lpl_header_next(header_t *h)
 
 void lpl_header_append(header_t *h, const char *name, const lpl_type_t type)
 {
+    header_t* last = lpl_header_last(h);
+    header_t *new = node_new(name, type, last->index + 1);
+
+    if (!new)
+        return;
+
+    new->next = move_to_init(h);
+    last->next = new;
 }
 
 
