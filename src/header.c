@@ -183,5 +183,14 @@ header_t *lpl_header_last(header_t *h)
 
 size_t lpl_header_size(header_t *h)
 {
-    return lpl_header_last(h)->index + 1;
+    size_t current = h->index;
+    size_t count = 0;
+    header_t *ptr = h->next;
+
+    while (ptr->index != current)
+    {
+        ptr = ptr->next;
+        ++count;
+    }
+    return count + 1;
 }
