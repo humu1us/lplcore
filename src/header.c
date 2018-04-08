@@ -140,5 +140,18 @@ header_t *lpl_header_search(header_t *h, const char *name)
     return NULL;
 }
 
+
+header_t *lpl_header_first(header_t *h)
+{
+    return move_to_init(h)->next;
+}
+
+
+header_t *lpl_header_last(header_t *h)
+{
+    header_t *ptr = h;
+    while (ptr->next->index != 0)
+        ptr = ptr->next;
     return ptr;
 }
+
