@@ -27,7 +27,7 @@ int main()
         assert(strcmp(names[index], lpl_header_name(h)) == 0);
         assert(types[index] == lpl_header_type(h));
 
-        h = lpl_header_next(h);
+        lpl_header_next(h);
 
         if (count > 0 && ((count + 1) % 3) == 0)
             index = 0;

@@ -20,15 +20,16 @@ header_t *create_list()
 
 void compare_list(header_t *h, const char *name, lpl_type_t type)
 {
-    assert(strcmp(lpl_header_name(h), name) == 0);
+    if (!name)
+        assert(!lpl_header_name(h));
+    else
+        assert(strcmp(lpl_header_name(h), name) == 0);
     assert(lpl_header_type(h) == type);
 }
 
 
 void show_header(header_t *h, char *where)
 {
-    if (!h)
-        printf("NULO ctm!\n");
     printf("* Moving to %s:\n", where);
     printf("\t- Name: %s\n", lpl_header_name(h));
     printf("\t- Type: %d\n", lpl_header_type(h));
@@ -40,20 +41,21 @@ int main()
     header_t *h = create_list();
     assert(h);
 
-    header_t *third = lpl_header_search(h, "Third");
-    show_header(third, "Third");
-    compare_list(third, "Third", lpl_float32);
+    lpl_header_search(h, "Third");
+    show_header(h, "Third");
+    compare_list(h, "Third", lpl_float32);
 
-    header_t *second = lpl_header_search(h, "Second");
-    show_header(second, "Second");
-    compare_list(second, "Second", lpl_int16);
+    lpl_header_search(h, "Second");
+    show_header(h, "Second");
+    compare_list(h, "Second", lpl_int16);
 
-    header_t *first = lpl_header_search(h, "First");
-    show_header(first, "First");
-    compare_list(first, "First", lpl_int8);
+    lpl_header_search(h, "First");
+    show_header(h, "First");
+    compare_list(h, "First", lpl_int8);
 
-    header_t *null = lpl_header_search(h, "not found");
-    assert(null == NULL);
+    lpl_header_search(h, "not found");
+    show_header(h, "\"not found\"");
+    compare_list(h, NULL, lpl_no_type);
 
     lpl_header_destroy(h);
 
