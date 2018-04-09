@@ -1,196 +1,241 @@
 #include <lplcore/header.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+
+
+struct node
+{
+    char *name;
+    lpl_type_t type;
+    struct node *next;
+};
+typedef struct node node_t;
 
 
 struct _header
 {
-    char *name;
-    size_t index;
-    lpl_type_t type;
-
-    header_t *next;
+    node_t *list;
+    node_t *cur;
+    node_t *beg;
+    node_t *end;
+    size_t size;
 };
 
 
 // Private functions
 
-header_t *node_new(const char *name, const lpl_type_t type, int index)
+node_t *node_new(const char *name, const lpl_type_t type)
 {
-    header_t *h = (header_t *) malloc(sizeof(header_t));
+    node_t *n = (node_t *) malloc(sizeof(node_t));
 
-    if (!h)
+    if (!n)
         return NULL;
 
     if (name)
-        h->name = strdup(name);
+        n->name = strdup(name);
     else
-        h->name = NULL;
+        n->name = NULL;
 
-    h->type = type;
-    h->index = index;
-    h->next = NULL;
+    n->type = type;
+    n->next = NULL;
 
-    return h;
+    return n;
 }
 
 
-bool is_node_empty(header_t *h)
+void node_destroy(node_t *n)
 {
-    return (!h || (!h->name && !h->type));
-}
-
-
-void node_destroy(header_t *h)
-{
-    free(h->name);
-    h->name = NULL;
-    h->next = NULL;
-    h->type = 0;
-    free(h);
+    free(n->name);
+    n->name = NULL;
+    n->next = NULL;
+    n->type = 0;
+    free(n);
 }
 
 
 // Public API
 
-header_t *lpl_header_new(size_t size,
-                         const char **names,
-                         const lpl_type_t *types)
+header_t *lpl_header_new_empty()
 {
-    header_t *h = node_new(names[0], types[0], 0);
+    header_t *h = (header_t *) malloc(sizeof(header_t));
     if (!h)
         return NULL;
 
-    header_t *ptr = h;
-
-    for (size_t i = 1; i < size; ++i)
-    {
-        ptr->next = node_new(names[i], types[i], i);
-        ptr = ptr->next;
-    }
-
-    ptr->next = h;
-
+    h->list = NULL;
+    h->beg = NULL;
+    h->end = NULL;
+    h->size = 0;
     return h;
 }
 
 
-header_t *lpl_header_new_empty()
+header_t *lpl_header_new(size_t size,
+                         const char **names,
+                         const lpl_type_t *types)
 {
-    header_t *h = node_new(NULL, lpl_no_type, 0);
-    h->next = h;
+
+    header_t *h = lpl_header_new_empty();
+    if (!h)
+        return NULL;
+
+    h->list = node_new(names[0], types[0]);
+    if (!h->list)
+    {
+        return NULL;
+    }
+
+    node_t *ptr = h->list;
+
+    size_t i = 1;
+    for (; i < size; ++i)
+    {
+        ptr->next = node_new(names[i], types[i]);
+        ptr = ptr->next;
+    }
+
+    h->size = i;
+
+    ptr->next = h->list;
+    h->cur = h->list;
+    h->beg = h->list;
+    h->end = ptr;
+
     return h;
 }
 
 
 void lpl_header_destroy(header_t *h)
 {
-    h = lpl_header_first(h);
-    header_t *ptr = NULL;
 
-    size_t size = lpl_header_size(h);
-    for (size_t i = 0; i < size; ++i)
+    node_t *del = h->beg;
+    node_t *ptr = NULL;
+
+    for (size_t i = 0; i < h->size; ++i)
     {
-        ptr = h->next;
-        node_destroy(h);
-        h = ptr;
+        ptr = del->next;
+        node_destroy(del);
+        del = ptr;
     }
+    free(h);
 }
 
 
 char *lpl_header_name(header_t *h)
 {
-    return h->name;
+    return h->cur ? h->cur->name : NULL;
 }
 
 
 lpl_type_t lpl_header_type(header_t *h)
 {
-    return h->type;
+    return h->cur ? h->cur->type : lpl_no_type;
 }
 
 
-header_t *lpl_header_next(header_t *h)
+void lpl_header_next(header_t *h)
 {
-    return h->next;
+    h->cur = h->cur->next;
+}
+
+
+bool lpl_header_is_empty(header_t *h)
+{
+    return !h ? true : h->list == NULL;
 }
 
 
 void lpl_header_append(header_t *h, const char *name, const lpl_type_t type)
 {
-    if (is_node_empty(h))
+    if (!h->list)
     {
-        h->name = strdup(name);
-        h->type = type;
+        h->list = node_new(name, type);
+        h->beg = h->list;
+        h->end = h->list;
+        h->cur = h->list;
+        ++h->size;
         return;
     }
 
-    header_t* last = lpl_header_last(h);
-    header_t *new = node_new(name, type, last->index + 1);
+    node_t *n = node_new(name, type);
 
-    if (!new)
+    h->end->next = n;
+    n->next = h->beg;
+    h->end = n;
+    ++h->size;
+}
+
+
+void lpl_header_remove_by_name(header_t *h, const char *name)
+{
+    node_t *prev = h->beg;
+
+    bool found = false;
+    for (size_t i = 0; i < h->size; ++i)
+    {
+        if (strcmp(prev->next->name, name) != 0)
+        {
+            found = true;
+            break;
+        }
+        prev = prev->next;
+    }
+
+    if (!found)
         return;
 
-    new->next = last->next;
-    last->next = new;
+    node_t *del = prev->next;
+    prev->next = prev->next->next;
+    node_destroy(del);
+    --h->size;
+
+    if (h->size == 0)
+        h->list = NULL;
 }
 
 
-void lpl_header_remove(header_t *h, const char *name)
+void lpl_header_remove_current(header_t *h)
 {
+    node_t *prev = h->beg;
+    while (prev->next != h->cur)
+        prev = prev->next;
+
+    prev->next = prev->next->next;
+    node_destroy(h->cur);
+    h->cur = prev;
+    --h->size;
 }
 
 
-header_t *lpl_header_search(header_t *h, const char *name)
+void lpl_header_search(header_t *h, const char *name)
 {
-    if (!h)
-        return NULL;
+    node_t *ptr = h->beg;
 
-    header_t *ptr = h;
-    size_t current = h->index;
-
-    do
+    for (size_t i = 0; i < h->size; ++i)
     {
         if (strcmp(ptr->name, name) == 0)
-            return ptr;
+        {
+            h->cur = ptr;
+            return;
+        }
         ptr = ptr->next;
     }
-    while (ptr->index != current);
-
-    return NULL;
+    h->cur = NULL;
 }
 
 
-header_t *lpl_header_first(header_t *h)
+void lpl_header_first(header_t *h)
 {
-    header_t *ptr = h;
-
-    while (ptr->index != 0)
-        ptr = ptr->next;
-    return ptr;
+    h->cur = h->beg;
 }
 
 
-header_t *lpl_header_last(header_t *h)
+void lpl_header_last(header_t *h)
 {
-    header_t *ptr = h;
-    while (ptr->next->index != 0)
-        ptr = ptr->next;
-    return ptr;
+    h->cur = h->end;
 }
 
 
 size_t lpl_header_size(header_t *h)
 {
-    size_t current = h->index;
-    size_t count = 0;
-    header_t *ptr = h->next;
-
-    while (ptr->index != current)
-    {
-        ptr = ptr->next;
-        ++count;
-    }
-    return count + 1;
+    return h->size;
 }
